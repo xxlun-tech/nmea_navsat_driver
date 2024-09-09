@@ -49,11 +49,14 @@ class Ros2NMEADriver(Node):
         self.fix_pub = self.create_publisher(NavSatFix, 'fix', 10)
         self.vel_pub = self.create_publisher(TwistStamped, 'vel', 10)
         self.heading_pub = self.create_publisher(QuaternionStamped, 'heading', 10)
-        self.time_ref_pub = self.create_publisher(TimeReference, 'time_reference', 10)
 
         self.time_ref_source = self.declare_parameter('time_ref_source', 'gps').value
         self.use_RMC = self.declare_parameter('useRMC', False).value
+        self.use_GNSS_time = self.declare_parameter('use_GNSS_time', False).value
         self.valid_fix = False
+
+        if not self.use_GNSS_time:
+            self.time_ref_pub = self.create_publisher(TimeReference, 'time_reference', 10)
 
         # epe = estimated position error
         self.default_epe_quality0 = self.declare_parameter('epe_quality0', 1000000).value
@@ -138,18 +141,22 @@ class Ros2NMEADriver(Node):
         current_fix = NavSatFix()
         current_fix.header.stamp = current_time
         current_fix.header.frame_id = frame_id
-        current_time_ref = TimeReference()
-        current_time_ref.header.stamp = current_time
-        current_time_ref.header.frame_id = frame_id
-        if self.time_ref_source:
-            current_time_ref.source = self.time_ref_source
-        else:
-            current_time_ref.source = frame_id
+        if not self.use_GNSS_time:
+            current_time_ref = TimeReference()
+            current_time_ref.header.stamp = current_time
+            current_time_ref.header.frame_id = frame_id
+            if self.time_ref_source:
+                current_time_ref.source = self.time_ref_source
+            else:
+                current_time_ref.source = frame_id
 
         if not self.use_RMC and 'GGA' in parsed_sentence:
             current_fix.position_covariance_type = NavSatFix.COVARIANCE_TYPE_APPROXIMATED
 
             data = parsed_sentence['GGA']
+            if self.use_GNSS_time:
+                current_fix.header.stamp = rclpy.time.Time(seconds=data['utc_time'][0], nanoseconds=data['utc_time'][1]).to_msg()
+
             fix_type = data['fix_type']
             if not (fix_type in self.gps_qualities):
                 fix_type = -1
@@ -192,8 +199,8 @@ class Ros2NMEADriver(Node):
 
             self.fix_pub.publish(current_fix)
 
-            if not math.isnan(data['utc_time']):
-                current_time_ref.time_ref = rclpy.time.Time(seconds=data['utc_time']).to_msg()
+            if not (math.isnan(data['utc_time'][0]) or self.use_GNSS_time):
+                current_time_ref.time_ref = rclpy.time.Time(seconds=data['utc_time'][0], nanoseconds=data['utc_time'][1]).to_msg()
                 self.last_valid_fix_time = current_time_ref
                 self.time_ref_pub.publish(current_time_ref)
 
@@ -237,8 +244,8 @@ class Ros2NMEADriver(Node):
 
                 self.fix_pub.publish(current_fix)
 
-                if not math.isnan(data['utc_time']):
-                    current_time_ref.time_ref = rclpy.time.Time(seconds=data['utc_time']).to_msg()
+                if not (math.isnan(data['utc_time'][0]) or self.use_GNSS_time):
+                    current_time_ref.time_ref = rclpy.time.Time(seconds=data['utc_time'][0], nanoseconds=data['utc_time'][1]).to_msg()
                     self.time_ref_pub.publish(current_time_ref)
 
             # Publish velocity from RMC regardless, since GGA doesn't provide it.
