@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2013, Eric Perko
@@ -30,7 +32,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
+import sys
 from functools import partial
 
 from nmea_msgs.msg import Sentence
@@ -62,3 +64,7 @@ def main(args=None):
     rclpy.spin(driver)
 
     rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main(sys.argv)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright 2022 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import socket
 import sys
+import socket
 
 import rclpy
 
@@ -81,3 +83,6 @@ def main(args=None):
 
 
         gnss_socket.close()
+
+if __name__ == '__main__':
+    main(sys.argv)
