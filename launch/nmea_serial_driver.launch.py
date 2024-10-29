@@ -31,6 +31,7 @@ def generate_launch_description():
         package='nmea_navsat_driver',
         executable='nmea_serial_driver.py',
         output='screen',
+        remappings=[('/fix', 'gps/fix')],
         parameters=[config_file]
     )
 

@@ -123,6 +123,9 @@ class Ros2NMEADriver(Node):
     # Returns True if we successfully did something with the passed in
     # nmea_string
     def add_sentence(self, nmea_string, frame_id, timestamp=None):
+        if nmea_string.startswith('#AGRICA'):
+            return False
+
         if not check_nmea_checksum(nmea_string):
             self.get_logger().warn("Received a sentence with an invalid checksum. " +
                                    "Sentence was: %s" % nmea_string)
@@ -164,7 +167,7 @@ class Ros2NMEADriver(Node):
             default_epe = gps_qual[0]
             current_fix.status.status = gps_qual[1]
             current_fix.position_covariance_type = gps_qual[2]
-            if current_fix.status.status > 0:
+            if current_fix.status.status >= NavSatStatus.STATUS_FIX:
                 self.valid_fix = True
             else:
                 self.valid_fix = False
